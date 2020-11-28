@@ -1,0 +1,1058 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	xmlns:spaceballs="spaceballs.*"
+	usePreloader="true" preloader="spaceballs.preloader.Preloader"
+	layout="absolute"
+	backgroundAlpha="100"
+	backgroundColor="#000000"
+	backgroundGradientColors="false"
+	height="600" width="800"
+	currentState="intro"
+	frameRate="25"
+	creationComplete="onCreationComplete()">
+	
+	<mx:Style source="spaceballs/style.css"/>
+	
+	<mx:Script>
+        <![CDATA[
+        	import spaceballs.data.SpaceBallsGame;
+        	import spaceballs.LoadDataWithFileRef;
+        	import spaceballs.Highscore;
+        	import spaceballs.LevelBuilder;
+        	import mx.controls.Image;
+        	import flash.net.*;
+			
+			// Game
+
+			[Bindable] public var _timer:String  = "00:00";
+			[Bindable] public var _current:String;
+			[Bindable] public var _hS:String;
+			[Bindable] public var _currentLevel:Number = 1;
+			[Bindable] public var _highscore:Number = 0;
+			[Bindable] public var _error:String;
+						
+			public var timer:Timer;
+			private var min:Number = 1;
+			
+			private static var _instance:SpaceBallsFlex; 
+						
+			private function checkLevel():void {
+				if(_currentLevel == -1) {
+					_currentLevel = 1;
+					_highscore = 0;
+				}
+			}
+			
+			public function setHSandLevel():void {
+				// Zeigt das aktuelle Level an
+				if(_currentLevel == -1) {
+					_current = "-";
+				} else {
+					_current = _currentLevel.toString();
+				}
+				
+				// Zeigt den aktuellen Highscore an
+				if(_highscore == -1) {
+					_hS = "-";
+				} else {
+					_hS = _highscore.toString();
+				}
+			}
+					
+			public function startTimer():void {
+				var game:SpaceBallsGame = gamefield.SpaceballsGame;
+				game.startTimer();
+				
+				timer = game.getTimer();
+				timer.addEventListener(TimerEvent.TIMER, displayTimer);
+			}
+			
+			private function displayTimer(even:TimerEvent):void {
+				var time:String = timer.currentCount.toString();
+				var sek:Number = Number(time);
+				var t:Number = sek;
+				var m:Number;
+				var s:Number;
+				
+				if(t < 60) {
+					if(t < 10) {
+						_timer = "00:0"+sek;
+					} else if(t < 60){
+						_timer = "00:"+sek;
+					}
+					 
+				} else if(t > 60) {
+					m = getMinutes(sek);
+					s = getSecond(sek);	
+					if(m < 10) {
+						if(s < 10) {
+							_timer = "0"+m+":0"+s;
+						} else {
+							_timer = "0"+m+":"+s;
+						}
+					} else {
+						if(s < 10) {
+							_timer = m+":0"+s;
+						} else {
+							_timer = m+":"+s;
+						}
+					}	
+				}
+			}
+			
+			/**
+			 *  Berechnet die aktuellen Sekunden
+			 */
+			private function getSecond(sek:Number):Number {
+				var s:Number = 0;
+				s = sek - min * 60;
+				return s;
+			}
+			
+			/**
+			 *  Berechnet die aktuellen Minuten (Max 99 Minuten Spielzeit)
+			 */
+			private function getMinutes(sek:Number):Number {
+				for(var i:Number = 0; i <= 99; i++) {
+					if(sek - (i * 60) == 0) {
+						min++;
+						return min;
+					}
+				}
+				return min;
+			}
+			
+			private function stopTimer():void {
+				var game:SpaceBallsGame = gamefield.SpaceballsGame;
+				game.stopTimer();
+			}
+			
+			private function resetTimer():void {
+				var game:SpaceBallsGame = gamefield.SpaceballsGame;
+				game.resetTimer();
+			}
+			
+			public function resetLevel():void {
+				var game:SpaceBallsGame = gamefield.SpaceballsGame;
+				game.resetLevel();
+			}
+			
+        	// Levelbuilder
+        	[Bindable] public var privateLevel:Boolean = false; // true = eigenes Level, false = normales Level
+        	
+			[Bindable] public var fieldNormal:String = "resources/images/levelbuilder-normal.png";
+			[Bindable] public var fieldEmpty:String = "resources/images/levelbuilder-empty.png";
+			[Bindable] public var fieldWall:String = "resources/images/levelbuilder-wall.png";
+			[Bindable] public var fieldEnd:String = "resources/images/levelbuilder-end.png";
+			[Bindable] public var fieldSpaceball:String = "resources/images/levelbuilder-spaceball.png";
+			[Bindable] public var fieldEnemy:String = "resources/images/levelbuilder-enemy.png";
+			[Bindable] public var fieldGravitationIn:String = "resources/images/levelbuilder-gravitationin.png";
+			[Bindable] public var fieldGravitationOut:String = "resources/images/levelbuilder-gravitationout.png";
+			[Bindable] public var fieldWormholeIn:String = "resources/images/levelbuilder-wormholein.png";
+			[Bindable] public var fieldWormholeOut:String = "resources/images/levelbuilder-wormholeout.png";
+			[Bindable] public var fieldHole:String = "resources/images/levelbuilder-hole.png";
+			[Bindable] public var fieldBlackhole:String = "resources/images/levelbuilder-blackhole.png";
+			
+			[Bindable] public var fieldActualSelected:String = new String(fieldNormal);
+			[Bindable] public var fieldSize:Number;
+			[Bindable] public var levelXMLText:String = "";
+			[Bindable] public var levelHelpArray:Array;
+			[Bindable] public var loadFileRef:LoadDataWithFileRef = new LoadDataWithFileRef();
+			[Bindable] public var _levelBuilder:Boolean = false;
+		
+			public function setLevelXMLText(lvl:String):void {
+				levelXMLText = lvl;
+			}
+		
+			/**
+			 * Öffnet einen Filedialog zum Auswählen einer Datei die man in den Speicher laden möchte
+			 */  
+			private function browseFile():void {
+				loadFileRef.browseFile();
+			}
+			
+			/**
+			 * Öffnet einen Filedialog das man entscheiden kann wo die Datei aus dem Levelbuilder hingespeichert wird  
+			 */
+			private function saveFile(level:String):void {
+				var SaveFileRef:LoadDataWithFileRef = new LoadDataWithFileRef();
+				SaveFileRef.saveFile(level);
+				this.currentState = 'menu';					
+			}
+			
+			/**
+			 * Befüllt den Levelbuilder mit Normalenfeldern 
+			*/
+			public function fillLevelbuilder():void {
+				fieldActualSelected = fieldNormal;
+				for(var x:int = 0; x < fieldSize; x++) {
+					for(var y:int = 0; y < fieldSize; y++) {
+						var img : Image = new Image();
+						img.source = fieldActualSelected;
+						img.name = "img"+x+"x"+y+"y";
+						img.alpha = 1.0;
+						img.buttonMode = true;
+						
+						if (fieldSize == 10) {
+							img.x = 29+x*49;
+							img.y = 84+y*49;
+							img.height = 48;
+							img.width = 48;
+						}
+						else if (fieldSize == 20) {
+							img.x = 29+x*24.5;
+							img.y = 84+y*24.5;
+							img.height = 23.5;
+							img.width = 23.5;
+						}
+						else if (fieldSize == 30) {
+							img.x = 29+x*16.333;
+							img.y = 84+y*16.333;
+							img.height = 15.333;
+							img.width = 15.333;
+						}
+						
+						img.addEventListener(MouseEvent.MOUSE_OVER, changeAlphaOver);
+						img.addEventListener(MouseEvent.MOUSE_OUT, changeAlphaOut);
+						img.addEventListener(MouseEvent.CLICK, changeField);
+						application.addChild(img);
+					}
+				}
+			}
+			/**
+			* Levelbuilder inhalt wird gespeichert
+			* State 2 aus dem Levelbuilder - Speichert ein Array mit Inhalt des Levelbuilders das 
+			* der Levelbuilder wieder befüllt werden kann
+			*/ 
+			private function saveLevelbuilder(state:Number):void {
+				var lB:LevelBuilder = new LevelBuilder(fieldSize);
+				
+				var levelArray:Array = lB.levelArray();
+				
+				levelArray = fillLevelArray(levelArray);
+				
+				if(state == 2) {
+					levelHelpArray = levelArray;
+				}
+				
+				levelArray = lB.combineArrayForXML(levelArray);
+								
+				var levelXML:String = lB.createLevelXML(levelArray);
+				
+				levelXMLText = levelXML;
+			}
+			
+			/**
+			 * Befüllt das Array mit dem Inhalt des Levelbuilders
+			 */ 
+			private function fillLevelArray(levelArray:Array):Array {
+				var lB:LevelBuilder = new LevelBuilder(fieldSize);
+				
+				//Befüllt Array mit namen der Bilder (wall.png)
+				for(var x:Number = 0; x < fieldSize; x++) {
+					for(var y:Number = 0; y < fieldSize; y++) {
+						
+						var img:Image = application.getChildByName("img"+x+"x"+y+"y");
+						var type:String = img.source.toString().slice(30);
+						
+						levelArray[x][y] = type;
+					}
+				}
+				
+				//ersetzt String durch Zahlen (ID/Typ der Felder)
+				levelArray = lB.changeArrayToType(levelArray);
+				
+				return levelArray;
+			}
+			
+			/**
+			 * Zum Speichern des Arrays mit den Levelbuilerinhalten 
+			 * @param: 2 
+			 */
+			private function playLevelbuilder():void {
+				saveLevelbuilder(2);
+				currentState = 'game';
+			}
+						
+			/**
+			 *	Befüllt den Levelbuilder nach einem Spiel wieder 
+			 */
+			public function refillLevelbuilder():void {
+				var levelArray:Array = levelHelpArray;
+				var img:Image;
+				
+				for(var x:Number = 0; x < fieldSize; x++) {
+					for(var y:Number = 0; y < fieldSize; y++) {
+						var wordType:String = levelArray[x][y];
+						img = application.getChildByName("img"+x+"x"+y+"y");
+						
+						switch (wordType) {
+							case "10": 		img.source = fieldNormal;
+											break;
+							
+							case "12": 		img.source = fieldEmpty;
+											break;
+							
+							case "6": 		img.source = fieldWall;
+											break;
+												
+							case "2": 		img.source = fieldEnd;
+											break;
+												
+							case "1": 		img.source = fieldSpaceball;
+											break;
+							
+							case "9": 		img.source = fieldEnemy;
+											break;
+												
+							case "11": 		img.source = fieldGravitationIn;
+											break;
+										
+							case "5": 		img.source = fieldGravitationOut;
+											break;
+							
+							case "7": 		img.source = fieldWormholeIn;
+											break;
+									
+							case "8": 		img.source = fieldWormholeOut;
+											break;
+															
+							case "3": 		img.source = fieldHole;
+											break;								
+							
+							case "4": 		img.source = fieldBlackhole;
+											break;
+						}						
+						application.addChild(img);
+					}
+				}
+			}
+			
+			private function changeField(e:MouseEvent):void {
+    			e.currentTarget.source = fieldActualSelected;
+			}
+			private function changeAlphaOver(e:MouseEvent):void {
+    			e.currentTarget.alpha = 0.4;
+			}
+			private function changeAlphaOut(e:MouseEvent):void {
+    			e.currentTarget.alpha = 1.0;
+			}
+			
+			/**
+			 * Löscht den Inhalt des Levelbuilders
+			 */
+			private function removeLevelbuilder():void
+			{
+				for(var x:int = 0; x < fieldSize; x++) 
+				{
+					for(var y:int = 0; y < fieldSize; y++) 
+					{
+						application.getChildByName("img"+x+"x"+y+"y").removeEventListener(MouseEvent.MOUSE_OVER, changeAlphaOver);
+						application.getChildByName("img"+x+"x"+y+"y").removeEventListener(MouseEvent.MOUSE_OUT, changeAlphaOut);
+						application.getChildByName("img"+x+"x"+y+"y").removeEventListener(MouseEvent.CLICK, changeField);
+						application.removeChild(application.getChildByName("img"+x+"x"+y+"y"));
+					}
+				}
+			}
+			
+        	[Bindable] public var buttonLevelbuilderNormalSelected:Boolean = false;
+        	[Bindable] public var buttonLevelbuilderEmptySelected:Boolean = true;
+        	[Bindable] public var buttonLevelbuilderWallSelected:Boolean = false;
+        	[Bindable] public var buttonLevelbuilderEndSelected:Boolean = false;
+        	[Bindable] public var buttonLevelbuilderSpaceballSelected:Boolean = false;
+        	[Bindable] public var buttonLevelbuilderEnemySelected:Boolean = false;
+        	[Bindable] public var buttonLevelbuilderGravitationInSelected:Boolean = false;
+        	[Bindable] public var buttonLevelbuilderGravitationOutSelected:Boolean = false;
+        	[Bindable] public var buttonLevelbuilderWormholeInSelected:Boolean = false;
+        	[Bindable] public var buttonLevelbuilderWormholeOutSelected:Boolean = false;
+        	[Bindable] public var buttonLevelbuilderHoleSelected:Boolean = false;
+        	[Bindable] public var buttonLevelbuilderBlackholeSelected:Boolean = false;
+        	
+            public function selectButton(button:String):void {
+            	switch (button)
+				{
+				case "buttonLevelbuilderNormal":
+					buttonLevelbuilderNormalSelected = true;
+					buttonLevelbuilderEmptySelected = false;
+					buttonLevelbuilderWallSelected = false;
+					buttonLevelbuilderEndSelected = false;
+					buttonLevelbuilderSpaceballSelected = false;
+					buttonLevelbuilderEnemySelected = false;
+					buttonLevelbuilderGravitationInSelected = false;
+					buttonLevelbuilderGravitationOutSelected = false;
+					buttonLevelbuilderWormholeInSelected = false;
+					buttonLevelbuilderWormholeOutSelected = false;
+					buttonLevelbuilderHoleSelected = false;
+					buttonLevelbuilderBlackholeSelected = false;
+					break;
+				case "buttonLevelbuilderEmpty":
+					buttonLevelbuilderNormalSelected = false;
+					buttonLevelbuilderEmptySelected = true;
+					buttonLevelbuilderWallSelected = false;
+					buttonLevelbuilderEndSelected = false;
+					buttonLevelbuilderSpaceballSelected = false;
+					buttonLevelbuilderEnemySelected = false;
+					buttonLevelbuilderGravitationInSelected = false;
+					buttonLevelbuilderGravitationOutSelected = false;
+					buttonLevelbuilderWormholeInSelected = false;
+					buttonLevelbuilderWormholeOutSelected = false;
+					buttonLevelbuilderHoleSelected = false;
+					buttonLevelbuilderBlackholeSelected = false;
+					break;
+				case "buttonLevelbuilderWall":
+					buttonLevelbuilderNormalSelected = false;
+					buttonLevelbuilderEmptySelected = false;
+					buttonLevelbuilderWallSelected = true;
+					buttonLevelbuilderEndSelected = false;
+					buttonLevelbuilderSpaceballSelected = false;
+					buttonLevelbuilderEnemySelected = false;
+					buttonLevelbuilderGravitationInSelected = false;
+					buttonLevelbuilderGravitationOutSelected = false;
+					buttonLevelbuilderWormholeInSelected = false;
+					buttonLevelbuilderWormholeOutSelected = false;
+					buttonLevelbuilderHoleSelected = false;
+					buttonLevelbuilderBlackholeSelected = false;
+					break;
+				case "buttonLevelbuilderEnd":
+					buttonLevelbuilderNormalSelected = false;
+					buttonLevelbuilderEmptySelected = false;
+					buttonLevelbuilderWallSelected = false;
+					buttonLevelbuilderEndSelected = true;
+					buttonLevelbuilderSpaceballSelected = false;
+					buttonLevelbuilderEnemySelected = false;
+					buttonLevelbuilderGravitationInSelected = false;
+					buttonLevelbuilderGravitationOutSelected = false;
+					buttonLevelbuilderWormholeInSelected = false;
+					buttonLevelbuilderWormholeOutSelected = false;
+					buttonLevelbuilderHoleSelected = false;
+					buttonLevelbuilderBlackholeSelected = false;
+					break;
+				case "buttonLevelbuilderSpaceball":
+					buttonLevelbuilderNormalSelected = false;
+					buttonLevelbuilderEmptySelected = false;
+					buttonLevelbuilderWallSelected = false;
+					buttonLevelbuilderEndSelected = false;
+					buttonLevelbuilderSpaceballSelected = true;
+					buttonLevelbuilderEnemySelected = false;
+					buttonLevelbuilderGravitationInSelected = false;
+					buttonLevelbuilderGravitationOutSelected = false;
+					buttonLevelbuilderWormholeInSelected = false;
+					buttonLevelbuilderWormholeOutSelected = false;
+					buttonLevelbuilderHoleSelected = false;
+					buttonLevelbuilderBlackholeSelected = false;
+					break;
+				case "buttonLevelbuilderEnemy":
+					buttonLevelbuilderNormalSelected = false;
+					buttonLevelbuilderEmptySelected = false;
+					buttonLevelbuilderWallSelected = false;
+					buttonLevelbuilderEndSelected = false;
+					buttonLevelbuilderSpaceballSelected = false;
+					buttonLevelbuilderEnemySelected = true;
+					buttonLevelbuilderGravitationInSelected = false;
+					buttonLevelbuilderGravitationOutSelected = false;
+					buttonLevelbuilderWormholeInSelected = false;
+					buttonLevelbuilderWormholeOutSelected = false;
+					buttonLevelbuilderHoleSelected = false;
+					buttonLevelbuilderBlackholeSelected = false;
+					break;
+				case "buttonLevelbuilderGravitationIn":
+					buttonLevelbuilderNormalSelected = false;
+					buttonLevelbuilderEmptySelected = false;
+					buttonLevelbuilderWallSelected = false;
+					buttonLevelbuilderEndSelected = false;
+					buttonLevelbuilderSpaceballSelected = false;
+					buttonLevelbuilderEnemySelected = false;
+					buttonLevelbuilderGravitationInSelected = true;
+					buttonLevelbuilderGravitationOutSelected = false;
+					buttonLevelbuilderWormholeInSelected = false;
+					buttonLevelbuilderWormholeOutSelected = false;
+					buttonLevelbuilderHoleSelected = false;
+					buttonLevelbuilderBlackholeSelected = false;
+					break;
+				case "buttonLevelbuilderGravitationOut":
+					buttonLevelbuilderNormalSelected = false;
+					buttonLevelbuilderEmptySelected = false;
+					buttonLevelbuilderWallSelected = false;
+					buttonLevelbuilderEndSelected = false;
+					buttonLevelbuilderSpaceballSelected = false;
+					buttonLevelbuilderEnemySelected = false;
+					buttonLevelbuilderGravitationInSelected = false;
+					buttonLevelbuilderGravitationOutSelected = true;
+					buttonLevelbuilderWormholeInSelected = false;
+					buttonLevelbuilderWormholeOutSelected = false;
+					buttonLevelbuilderHoleSelected = false;
+					buttonLevelbuilderBlackholeSelected = false;
+					break;
+				case "buttonLevelbuilderWormholeIn":
+					buttonLevelbuilderNormalSelected = false;
+					buttonLevelbuilderEmptySelected = false;
+					buttonLevelbuilderWallSelected = false;
+					buttonLevelbuilderEndSelected = false;
+					buttonLevelbuilderSpaceballSelected = false;
+					buttonLevelbuilderEnemySelected = false;
+					buttonLevelbuilderGravitationInSelected = false;
+					buttonLevelbuilderGravitationOutSelected = false;
+					buttonLevelbuilderWormholeInSelected = true;
+					buttonLevelbuilderWormholeOutSelected = false;
+					buttonLevelbuilderHoleSelected = false;
+					buttonLevelbuilderBlackholeSelected = false;
+					break;
+				case "buttonLevelbuilderWormholeOut":
+					buttonLevelbuilderNormalSelected = false;
+					buttonLevelbuilderEmptySelected = false;
+					buttonLevelbuilderWallSelected = false;
+					buttonLevelbuilderEndSelected = false;
+					buttonLevelbuilderSpaceballSelected = false;
+					buttonLevelbuilderEnemySelected = false;
+					buttonLevelbuilderGravitationInSelected = false;
+					buttonLevelbuilderGravitationOutSelected = false;
+					buttonLevelbuilderWormholeInSelected = false;
+					buttonLevelbuilderWormholeOutSelected = true;
+					buttonLevelbuilderHoleSelected = false;
+					buttonLevelbuilderBlackholeSelected = false;
+					break;
+				case "buttonLevelbuilderHole":
+					buttonLevelbuilderNormalSelected = false;
+					buttonLevelbuilderEmptySelected = false;
+					buttonLevelbuilderWallSelected = false;
+					buttonLevelbuilderEndSelected = false;
+					buttonLevelbuilderSpaceballSelected = false;
+					buttonLevelbuilderEnemySelected = false;
+					buttonLevelbuilderGravitationInSelected = false;
+					buttonLevelbuilderGravitationOutSelected = false;
+					buttonLevelbuilderWormholeInSelected = false;
+					buttonLevelbuilderWormholeOutSelected = false;
+					buttonLevelbuilderHoleSelected = true;
+					buttonLevelbuilderBlackholeSelected = false;
+					break;
+				case "buttonLevelbuilderBlackhole":
+					buttonLevelbuilderNormalSelected = false;
+					buttonLevelbuilderEmptySelected = false;
+					buttonLevelbuilderWallSelected = false;
+					buttonLevelbuilderEndSelected = false;
+					buttonLevelbuilderSpaceballSelected = false;
+					buttonLevelbuilderEnemySelected = false;
+					buttonLevelbuilderGravitationInSelected = false;
+					buttonLevelbuilderGravitationOutSelected = false;
+					buttonLevelbuilderWormholeInSelected = false;
+					buttonLevelbuilderWormholeOutSelected = false;
+					buttonLevelbuilderHoleSelected = false;
+					buttonLevelbuilderBlackholeSelected = true;
+					break;
+				default:
+				}
+            }
+        
+        	// Alerts
+			[Bindable] public var controllerVisibility:Boolean = false;
+			[Bindable] public var firstlevelVisibility:Boolean = false;
+			[Bindable] public var instructionsVisibility:Boolean = false;
+			[Bindable] public var aboutVisibility:Boolean = false;
+			[Bindable] public var highscoresVisibility:Boolean = false;
+			[Bindable] public var levelcompletedVisibility:Boolean = false;
+			[Bindable] public var allcompletedVisibility:Boolean = false;
+			[Bindable] public var allcompletedhighVisibility:Boolean = false;
+			[Bindable] public var levelfailedVisibility:Boolean = false;
+			[Bindable] public var chooselevelsizeVisibility:Boolean = false;
+			[Bindable] public var savelevelVisibility:Boolean = false;
+			[Bindable] public var loadlevelVisibility:Boolean = false;
+			[Bindable] public var ownlevelcompletedVisibility:Boolean = false;
+			[Bindable] public var owntestlevelcompletedVisibility:Boolean = false;
+			[Bindable] public var loadlevelfailureVisibility:Boolean = false;
+			[Bindable] public var levelLoadfailureVisibility:Boolean = false;
+			
+			// Controller
+			[Bindable] public var currentController:uint = 1;
+			
+        	// Sound
+        	[Bindable] public var buttonSoundSelected:Boolean = false;
+        	[Bindable] public var changeSoundState:Boolean = true;
+            public function playSound():void {
+            	if (buttonSoundSelected == false) {
+                	video.volume = 0;
+                	buttonSoundSelected = true;
+                	changeSoundState = false;
+                }
+                else {
+                	video.volume = 1;
+                	buttonSoundSelected = false;
+                	changeSoundState = true;
+                }
+            }
+           
+            // Pause
+        	[Bindable] public var buttonPauseSelected:Boolean = false;
+        	[Bindable] public var pauseGameState:Boolean = false;
+            public function gamePause():void {
+            	if(gamefield.SpaceballsGame.Activate == false) {
+            		pauseGameState = !buttonPauseSelected;
+            		buttonPauseSelected = !buttonPauseSelected;
+            		if(pauseGameState == false) {
+            			this.stopTimer();
+            		} else {
+            			this.startTimer();
+            		}
+            	}
+            }
+            
+            private function checkPause():void {
+            	if(pauseGameState == true) {
+            		gamePause();
+            	}
+            }
+            
+            // XML-Highscores
+			private var myLoader:URLLoader = new URLLoader();
+			private var myURL:URLRequest = new URLRequest("http://www.basster.de/spaceballs/spaceballs_highscores.php");
+			[Bindable] public var myXML:XML;	
+			            
+            // Wird beim Start ausgefuehrt
+            private function onCreationComplete():void {
+				myLoader.addEventListener(Event.COMPLETE, onLoadComplete);
+				myLoader.load(myURL);
+				
+				_instance = this;
+			}
+			
+			private function onLoadComplete(evt : Event):void {
+				XML.ignoreComments = true;
+				XML.ignoreWhitespace = true;
+				myXML = new XML(evt.target.data);
+			}
+			
+			/**
+			 * Gibt die aktuelle Instance der SpaceBallFlex wieder
+			 */
+			public static function getInstance():SpaceBallsFlex {
+				if (_instance) {
+					return _instance;
+				}
+				else {
+					throw new Error("SpaceBallsFlex is not initialized!");
+				}
+			}
+			
+			public function levelCompletedClick():void {
+				levelcompletedVisibility = false; 
+				this.currentState = 'menu'; 
+				this.currentState = 'game';				
+			}
+			
+			public function levelFailedClick():void {
+				 this.checkLevel(); 
+				 this.currentState= 'menu'; 
+				 this.currentState = 'game'; 
+				 levelfailedVisibility = false;
+			}
+            
+            public function allLevelCompletedClick():void {
+            	currentState = 'menu'; 
+            	allcompletedVisibility = false; 
+            	highscoresVisibility = true;
+            }
+            
+            public function onEscape():void {
+            	if(pauseGameState == true) {
+					gamePause();
+				} 
+				currentState = 'menu'; 
+				privateLevel = false; 
+				resetLevel(); 
+				_currentLevel = 1; 
+				_highscore = 0; 
+				_levelBuilder = false;
+            }
+        ]]>
+    </mx:Script>
+    
+    <mx:Fade id="alertOut" duration="400" alphaFrom="1.0" alphaTo="0.0"/>
+    <mx:Fade id="alertIn" duration="400" alphaFrom="0.0" alphaTo="1.0"/>
+    
+    <mx:transitions>
+    	<mx:Transition fromState="menu" toState="game">
+    		<mx:Parallel target="{game}">
+    			<mx:Fade duration="800" />
+    			<mx:Blur duration="800" />
+    		</mx:Parallel>
+    	</mx:Transition>
+    	<mx:Transition fromState="game" toState="menu">
+    		<mx:Parallel target="{menu}">
+    			<mx:Fade duration="800" />
+    			<mx:Blur duration="800" />
+    		</mx:Parallel>
+    	</mx:Transition>
+    	<mx:Transition fromState="menu" toState="levelbuilder">
+    		<mx:Parallel target="{levelbuilder}">
+    			<mx:Fade duration="800" />
+    			<mx:Blur duration="800" />
+    		</mx:Parallel>
+    	</mx:Transition>
+    	<mx:Transition fromState="levelbuilder" toState="menu">
+    		<mx:Parallel target="{menu}">
+    			<mx:Fade duration="800" />
+    			<mx:Blur duration="800" />
+    		</mx:Parallel>
+    	</mx:Transition>
+    	    	<mx:Transition fromState="game" toState="levelbuilder">
+    		<mx:Parallel target="{levelbuilder}">
+    			<mx:Fade duration="800" />
+    			<mx:Blur duration="800" />
+    		</mx:Parallel>
+    	</mx:Transition>
+    	<mx:Transition fromState="levelbuilder" toState="game">
+    		<mx:Parallel target="{game}">
+    			<mx:Fade duration="800" />
+    			<mx:Blur duration="800" />
+    		</mx:Parallel>
+    	</mx:Transition>
+    </mx:transitions>
+    
+	<mx:states>
+	
+		<mx:State name="intro">
+		
+			<mx:AddChild>
+				<mx:Canvas id="intro">
+					<mx:Image x="300" y="237" source="@Embed('resources/images/videopreloader.gif')" />
+					<mx:VideoDisplay x="0" y="0" id="video" width="800" height="600" backgroundAlpha="0" source="resources/videos/SpaceBallsIntro.f4v" autoPlay="true" volume="1.0" bufferTime="32" complete="currentState = 'menu';"/>
+					<mx:Button x="25" y="565" id="buttonSound" buttonMode="true" styleName="buttonSound" selected="{buttonSoundSelected}" click="playSound();" />
+					<mx:Button x="734" y="570" id="buttonSkip" buttonMode="true" styleName="buttonSkip" click="video.stop(); video.close(); currentState = 'menu';" />
+				</mx:Canvas>
+			</mx:AddChild>
+			
+		</mx:State>
+		
+		<mx:State name="menu">
+		
+			<mx:AddChild>
+				<mx:Canvas id="menu">
+					<mx:Image x="0" y="0" source="@Embed('resources/images/background_start.jpg')" />
+					<mx:Button x="463" y="357" id="buttonMainStart" buttonMode="true" styleName="buttonMainStart" click="controllerVisibility = true;" />
+					<mx:Button x="23" y="558" id="buttonMainInstructions" buttonMode="true" styleName="buttonMainInstructions" click="instructionsVisibility = true;" />
+					<mx:Button x="164" y="558" id="buttonMainHighscores" buttonMode="true" styleName="buttonMainHighscores" click="highscoresVisibility = true;" />
+					<mx:Button x="298" y="558" id="buttonMainBuidLevels" buttonMode="true" styleName="buttonMainBuidLevels" click="chooselevelsizeVisibility = true;" />
+					<mx:Button x="537" y="558" id="buttonMainLoadLevels" buttonMode="true" styleName="buttonMainLoadLevels" click="loadlevelVisibility = true;" />
+					<mx:Button x="681" y="557" id="buttonMainAbout" buttonMode="true" styleName="buttonMainAbout" click="aboutVisibility = true;" />
+				</mx:Canvas>
+			</mx:AddChild>
+			
+			<mx:AddChild>			
+				<mx:Canvas visible="{controllerVisibility}" hideEffect="{alertOut}" showEffect="{alertIn}">
+					<mx:Image x="0" y="0" source="@Embed('resources/images/background_overlays.png')" />
+					<mx:Image x="139" y="145" source="@Embed('resources/images/window-controller.png')" />
+					<mx:Text x="168" y="168" selectable="false" styleName="textHeadline" text="Please choose your controller ..." />
+					<mx:TextArea x="168" y="208" width="125" height="40" editable="false" selectable="false" styleName="text14p" text="Classic Control by Mouse ..." />
+					<mx:TextArea x="339" y="208" width="135" height="40" editable="false" selectable="false" styleName="text14p" text="Best Experience with Wii Controller" />
+					<mx:TextArea x="508" y="208" width="135" height="40" editable="false" selectable="false" styleName="text14p" text="Use your arrow keys ..." />
+					<mx:Button x="163" y="262" id="buttonControllerMouse" buttonMode="true" styleName="buttonControllerMouse" click="currentController = 1; controllerVisibility = false; firstlevelVisibility = true;" />
+					<mx:Button x="334" y="246" id="buttonControllerWii" buttonMode="true" styleName="buttonControllerWii" click="currentController = 2; controllerVisibility = false; firstlevelVisibility = true;" />
+					<mx:Button x="492" y="262" id="buttonControllerNotebook" buttonMode="true" styleName="buttonControllerNotebook" click="currentController = 3; controllerVisibility = false; firstlevelVisibility = true;" />
+				</mx:Canvas>
+			</mx:AddChild>
+			
+			<mx:AddChild>
+				<mx:Canvas visible="{firstlevelVisibility}" hideEffect="{alertOut}" showEffect="{alertIn}">
+					<mx:Image x="0" y="0" source="@Embed('resources/images/background_overlays.png')" />
+					<mx:Image x="249" y="221" source="@Embed('resources/images/window-gratulations.png')" />
+					<mx:Text x="278" y="244" selectable="false" styleName="textHeadline" text="Let's start..." />
+					<mx:TextArea x="278" y="284" width="250" height="50" verticalScrollPolicy="off" editable="false" selectable="false" styleName="text15p" text="Ready for your first mission? Get the Spaceball to the white spot..." />
+					<mx:Button x="437" y="344" id="buttonFirstMission" buttonMode="true" styleName="buttonFirstMission" click="currentState = 'game'; firstlevelVisibility = false;" />
+				</mx:Canvas>
+			</mx:AddChild>
+			
+			<mx:AddChild>
+				<mx:Canvas visible="{instructionsVisibility}" hideEffect="{alertOut}" showEffect="{alertIn}">
+					<mx:Image x="0" y="0" source="@Embed('resources/images/background_overlays.png')" />
+					<mx:Image x="158" y="80" source="@Embed('resources/images/window-standardsize.png')" />
+					<mx:Text x="187" y="103" selectable="false" styleName="textHeadline" text="Instructions" />
+					<mx:TextArea x="187" y="143" width="430" height="340" verticalScrollPolicy="off" editable="false" selectable="false" styleName="text15p" >
+						<mx:htmlText>
+						<![CDATA[Playing Spaceballs is easy! Every levels intention is to get the white ball as soon as possible onto the blue spot. But be carefull: maybe there are some enemies and pitfalls!<br><br><font face="LevenimBold">Control the game with your...</font><br><br><font color="#49CBED" face="LevenimBold">Mouse:</font> Move your mouse as usual across the playing field. The field know will move space and the ball will roll!<br><br><font color="#49CBED" face="LevenimBold">Wii Controller</font> To play the game with your Wiimote you will have to connect it with a small programm called WiiFlash. You can download it here: <a href="http://wiiflash.bytearray.org" target="_blank"><u>wiiflash.bytearray.org</u></a><br><br><font color="#49CBED" face="LevenimBold">Keyboard:</font> Simply use the arrow keys from your keyboard to play the game.]]>
+						</mx:htmlText>
+					</mx:TextArea>
+					<mx:Button x="602" y="91" id="buttonXInstructions" buttonMode="true" styleName="buttonX" click="instructionsVisibility = false;" />
+					<mx:Button x="563" y="484" id="buttonCloseInstructions" buttonMode="true" styleName="buttonClose" click="instructionsVisibility = false;" />
+				</mx:Canvas>
+			</mx:AddChild>
+			
+			<mx:AddChild>
+				<mx:Canvas visible="{aboutVisibility}" hideEffect="{alertOut}" showEffect="{alertIn}">
+					<mx:Image x="0" y="0" source="@Embed('resources/images/background_overlays.png')" />
+					<mx:Image x="158" y="80" source="@Embed('resources/images/window-standardsize.png')" />
+					<mx:Text x="187" y="103" selectable="false" styleName="textHeadline" text="About" />
+					<mx:Image x="265" y="103" source="@Embed('resources/images/logo.png')" />
+					<mx:TextArea x="187" y="143" width="420" height="340" verticalScrollPolicy="off" editable="false" selectable="false" styleName="text15p" >
+						<mx:htmlText>
+						<![CDATA[This game was developed as a project work during our mediainformatics studies. We hope that we've created a game that is able to fascinate it's users. Have fun!<br><br><font color="#49CBED" face="LevenimBold">Jan Breier</font> (Design, ActionScript 3, MXML)<br>Website: <a href="http://www.areablue.de" target="_blank"><u>www.areablue.de</u></a><br><br><font color="#49CBED" face="LevenimBold">Ole Roessner</font> (ActionScript 3, Papervision3D, Box2D)<br>Website: <a href="http://www.basster.de" target="_blank"><u>www.basster.de</u></a><br><br><font color="#49CBED" face="LevenimBold">Thomas Kuschmann</font> (ActionScript 3, XML)<br><br>Thanks to all tutorials in the web, that helped us to get on with everything we never heard of before.<br>Especially to Jan Rigerl from DEVM-Games for letting<br>us view his code of "Tilt".]]>
+						</mx:htmlText>
+					</mx:TextArea>
+					<mx:Button x="602" y="91" id="buttonXAbout" buttonMode="true" styleName="buttonX" click="aboutVisibility = false;" />
+					<mx:Button x="563" y="484" id="buttonCloseAbout" buttonMode="true" styleName="buttonClose" click="aboutVisibility = false;" />
+				</mx:Canvas>
+			</mx:AddChild>
+			
+			<mx:AddChild>
+				<mx:Canvas visible="{highscoresVisibility}" hideEffect="{alertOut}" showEffect="{alertIn}">
+					<mx:Image x="0" y="0" source="@Embed('resources/images/background_overlays.png')" />
+					<mx:Image x="158" y="80" source="@Embed('resources/images/window-standardsize.png')" />
+					<mx:Text x="187" y="103" selectable="false" styleName="textHeadline" text="Highscores - The Top 15!" />
+					<mx:TextArea x="187" y="143" width="25" height="340" verticalScrollPolicy="off" horizontalScrollPolicy="off" wordWrap="false" editable="false" selectable="false" styleName="textHighscores" >
+						<mx:htmlText>
+					 	<![CDATA[1.<br>2.<br>3.<br>4.<br>5.<br>6.<br>7.<br>8.<br>9.<br>10.<br>11.<br>12.<br>13.<br>14.<br>15.]]>
+						</mx:htmlText>
+					</mx:TextArea>
+					<mx:TextArea x="225" y="143" width="160" height="340" verticalScrollPolicy="off" horizontalScrollPolicy="off" wordWrap="false" editable="false" selectable="false" styleName="textHighscoresNames">
+						<mx:htmlText>
+					 	{myXML.position.(@id==1).name}{myXML.position.(@id==2).name}{myXML.position.(@id==3).name}{myXML.position.(@id==4).name}{myXML.position.(@id==5).name}{myXML.position.(@id==6).name}{myXML.position.(@id==7).name}{myXML.position.(@id==8).name}{myXML.position.(@id==9).name}{myXML.position.(@id==10).name}{myXML.position.(@id==11).name}{myXML.position.(@id==12).name}{myXML.position.(@id==13).name}{myXML.position.(@id==14).name}{myXML.position.(@id==15).name}
+						</mx:htmlText>
+					</mx:TextArea>
+					<mx:TextArea x="390" y="143" width="120" height="340" verticalScrollPolicy="off" horizontalScrollPolicy="off" wordWrap="false" editable="false" selectable="false" styleName="textHighscores">
+						<mx:htmlText>
+					 	{myXML.position.(@id==1).score}{myXML.position.(@id==2).score}{myXML.position.(@id==3).score}{myXML.position.(@id==4).score}{myXML.position.(@id==5).score}{myXML.position.(@id==6).score}{myXML.position.(@id==7).score}{myXML.position.(@id==8).score}{myXML.position.(@id==9).score}{myXML.position.(@id==10).score}{myXML.position.(@id==11).score}{myXML.position.(@id==12).score}{myXML.position.(@id==13).score}{myXML.position.(@id==14).score}{myXML.position.(@id==15).score}
+						</mx:htmlText>
+					</mx:TextArea>
+					<mx:TextArea x="510" y="143" width="100" height="340" verticalScrollPolicy="off" horizontalScrollPolicy="off" wordWrap="false" editable="false" selectable="false" styleName="textHighscores">
+						<mx:htmlText>
+					 	{myXML.position.(@id==1).date}{myXML.position.(@id==2).date}{myXML.position.(@id==3).date}{myXML.position.(@id==4).date}{myXML.position.(@id==5).date}{myXML.position.(@id==6).date}{myXML.position.(@id==7).date}{myXML.position.(@id==8).date}{myXML.position.(@id==9).date}{myXML.position.(@id==10).date}{myXML.position.(@id==11).date}{myXML.position.(@id==12).date}{myXML.position.(@id==13).date}{myXML.position.(@id==14).date}{myXML.position.(@id==15).date}
+						</mx:htmlText>
+					</mx:TextArea>
+					<mx:Button x="602" y="91" id="buttonXHighscores" buttonMode="true" styleName="buttonX" click="highscoresVisibility = false;" />
+					<mx:Button x="563" y="484" id="buttonCloseHighscores" buttonMode="true" styleName="buttonClose" click="highscoresVisibility = false;" />					
+				</mx:Canvas>
+			</mx:AddChild>
+			
+			<mx:AddChild>			
+				<mx:Canvas visible="{chooselevelsizeVisibility}" hideEffect="{alertOut}" showEffect="{alertIn}">
+					<mx:Image x="0" y="0" source="@Embed('resources/images/background_overlays.png')" />
+					<mx:Image x="139" y="145" source="@Embed('resources/images/window-controller.png')" />
+					<mx:Text x="168" y="168" selectable="false" styleName="textHeadline" text="Please choose the size of your level ..." />
+					<mx:TextArea x="168" y="208" width="135" height="40" editable="false" selectable="false" styleName="text14p" text="Small level with few big fields..." />
+					<mx:TextArea x="339" y="208" width="135" height="40" editable="false" selectable="false" styleName="text14p" text="Standard: medium sized fields..." />
+					<mx:TextArea x="508" y="208" width="135" height="40" editable="false" selectable="false" styleName="text14p" text="Big level with many small fields!" />
+					<mx:Button x="168" y="262" id="buttonLevelSizeSmall" buttonMode="true" styleName="buttonLevelSizeSmall" click="fieldSize = 10; chooselevelsizeVisibility = false; currentState = 'levelbuilder'; fillLevelbuilder()" />
+					<mx:Button x="340" y="262" id="buttonLevelSizeNormal" buttonMode="true" styleName="buttonLevelSizeNormal" click="fieldSize = 20; chooselevelsizeVisibility = false; currentState = 'levelbuilder'; fillLevelbuilder()" />
+					<mx:Button x="509" y="262" id="buttonLevelSizeBig" buttonMode="true" styleName="buttonLevelSizeBig" click="fieldSize = 30; chooselevelsizeVisibility = false; currentState = 'levelbuilder'; fillLevelbuilder()" />
+				</mx:Canvas>
+			</mx:AddChild>
+			
+			<!--<mx:AddChild>
+				<mx:Canvas visible="{loadlevelVisibility}" hideEffect="{alertOut}" showEffect="{alertIn}">
+					<mx:Image x="0" y="0" source="@Embed('resources/images/background_overlays.png')" />
+					<mx:Image x="158" y="80" source="@Embed('resources/images/window-standardsize.png')" />
+					<mx:Text x="187" y="103" selectable="false" styleName="textHeadline" text="Load your own level ..." />
+					<mx:TextArea x="187" y="143" width="430" height="340" verticalScrollPolicy="off" editable="false" selectable="false" styleName="text15p" >
+						<mx:htmlText>
+						<![CDATA[To load your own level please paste your beforehand generated level-code into the text-field below and click "Start Mission". Have fun on your own mission!]]>
+						</mx:htmlText>
+					</mx:TextArea>
+					<mx:TextArea x="187" y="225" id="loadLevelXMLCode" width="425" height="235" verticalScrollPolicy="off" horizontalScrollPolicy="off" backgroundColor="#b5f0ff" borderStyle="solid" borderColor="#49cbed" fontFamily="LevenimRegular" fontWeight="normal" fontSize="11" editable="true" selectable="true" />
+					<mx:Button x="602" y="91" id="buttonXLoadLevel" buttonMode="true" styleName="buttonX" click="loadlevelVisibility = false;" />
+					<mx:Button x="447" y="484" id="buttonLoadLevel" buttonMode="true" styleName="buttonFirstMission" click="currentState = 'game'; loadlevelVisibility = false;" />
+					<mx:Button x="563" y="484" id="buttonCloseLoadLevel" buttonMode="true" styleName="buttonClose" click="loadlevelVisibility = false;" />	
+				</mx:Canvas>
+			</mx:AddChild>-->
+			
+			<mx:AddChild>
+				<mx:Canvas visible= "{loadlevelVisibility}" hideEffect="{alertOut}" showEffect="{alertIn}" >
+					<mx:Image x="0" y="0" source="@Embed('resources/images/background_overlays.png')" />
+					<mx:Image x="249" y="213" source="@Embed('resources/images/window-uploadlevel.png')" />
+					<mx:Text x="278" y="235" selectable="false" styleName="textHeadline" text="Load your level..." />
+					<mx:TextArea x="278" y="273" width="250" height="120" verticalScrollPolicy="off" editable="false" selectable="false" styleName="text15p" text="To load your own level click the button below and upload a level. Have fun on your mission!"/>
+					<mx:Button x="513" y="224" id="buttonXLoadLevel" buttonMode="true" styleName="buttonX" click="loadlevelVisibility = false;" />
+					<mx:Button x="405" y="353" id="buttonLevelbuilderUpload" buttonMode="true" styleName="buttonLevelbuilderUpload" click="browseFile(); loadlevelVisibility = false; this.privateLevel = true;" />
+				</mx:Canvas>
+			</mx:AddChild>
+			
+			<mx:AddChild>
+				<mx:Canvas visible= "{loadlevelfailureVisibility}" hideEffect="{alertOut}" showEffect="{alertIn}" >
+					<mx:Image x="0" y="0" source="@Embed('resources/images/background_overlays.png')" />
+					<mx:Image x="249" y="213" source="@Embed('resources/images/window-uploadlevel.png')" />
+					<mx:Text x="278" y="235" selectable="false" styleName="textHeadline" text="Load level failure!" />
+					<mx:TextArea x="278" y="273" width="250" height="120" verticalScrollPolicy="off" editable="false" selectable="false" styleName="text15p" text="This file was not a valid level file. Please make sure to select a real Spaceball level-file..."/>
+					<mx:Button x="513" y="224" id="buttonXLoadLevel2" buttonMode="true" styleName="buttonX" click="loadlevelfailureVisibility = false;" />
+					<mx:Button x="405" y="353" id="buttonLevelbuilderUpload2" buttonMode="true" styleName="buttonLevelbuilderUpload" click="currentState = 'game'; loadlevelfailureVisibility = false;" />
+				</mx:Canvas>
+			</mx:AddChild>
+			
+			<mx:AddChild>
+				<mx:Canvas visible= "{levelLoadfailureVisibility}" hideEffect="{alertOut}" showEffect="{alertIn}" >
+					<mx:Image x="0" y="0" source="@Embed('resources/images/background_overlays.png')" />
+					<mx:Image x="249" y="213" source="@Embed('resources/images/window-uploadlevel.png')" />
+					<mx:Text x="278" y="235" selectable="false" styleName="textHeadline" text="Level failure!" />
+					<mx:TextArea x="278" y="273" width="250" height="120" verticalScrollPolicy="off" editable="false" selectable="false" styleName="text15p" text="{_error}"/>
+					<mx:Button x="513" y="224" id="buttonXLoadLevel3" buttonMode="true" styleName="buttonX" click="loadlevelfailureVisibility = false;" />
+				</mx:Canvas>
+			</mx:AddChild>
+			
+		</mx:State>
+		
+		<mx:State name="game">
+		
+			<mx:AddChild>
+				<mx:Canvas id="game">
+					<mx:Image x="0" y="0" source="@Embed('resources/images/background_game.jpg')" />
+					<mx:Button x="303" y="35" id="buttonLevelbuilderEdit" buttonMode="true" styleName="buttonLevelbuilderEdit" visible="{_levelBuilder}" click=" this.checkPause(); this._currentLevel = 1;currentState = 'levelbuilder'; fillLevelbuilder(); refillLevelbuilder()" />
+					<mx:Button x="449" y="35" id="buttonGameSound" buttonMode="true" styleName="buttonGameSound" selected="{buttonSoundSelected}" click="playSound();" />
+					<mx:Button x="485" y="35" id="buttonGamePause" buttonMode="true" styleName="buttonGamePause" selected="{buttonPauseSelected}" click="checkPause();" />
+					<mx:Button x="521" y="35" id="buttonGameController" buttonMode="true" styleName="buttonGameController" click="controllerVisibility = true; checkPause();" />
+					<mx:Button x="619" y="35" id="buttonGameInstructions" buttonMode="true" styleName="buttonGameInstructions" click="instructionsVisibility = true; this.checkPause();" />
+					<mx:Button x="707" y="35" id="buttonGameCancel" buttonMode="true" styleName="buttonGameCancel" click="checkPause(); currentState = 'menu'; privateLevel = false; resetLevel(); this._currentLevel = 1; this._highscore = 0; this._levelBuilder = false" />
+					<mx:Text x="515" y="561" id="textGameLevel" selectable="false" styleName="textGameScores" text="{_current}" />
+					<mx:Text x="638" y="561" id="textGameScore" selectable="false" styleName="textGameScores" text="{_hS}" />
+					<mx:Text x="736" y="561" id="textGameTime" selectable="false" styleName="textGameScores" text="{_timer}" />
+					<spaceballs:SpaceballsAS3 x="25" y="64" id="gamefield" creationComplete="this.setFocus(); gamefield.setPrivateLevel(privateLevel); gamefield.setLevelXML(levelXMLText); gamefield.changeController(currentController);" currentSoundState="{changeSoundState}" currentGameState="{pauseGameState}" />
+				</mx:Canvas>
+			</mx:AddChild>
+			
+			<mx:AddChild>
+				<mx:Canvas visible="{instructionsVisibility}" hideEffect="{alertOut}" showEffect="{alertIn}">
+					<mx:Image x="0" y="0" source="@Embed('resources/images/background_overlays.png')" />
+					<mx:Image x="158" y="80" source="@Embed('resources/images/window-standardsize.png')" />
+					<mx:Text x="187" y="103" selectable="false" styleName="textHeadline" text="Instructions" />
+					<mx:TextArea x="187" y="143" width="430" height="340" verticalScrollPolicy="off" editable="false" selectable="false" styleName="text15p" >
+						<mx:htmlText>
+						<![CDATA[Playing Spaceballs is easy! Every levels intention is to get the white ball as soon as possible onto the blue spot. But be carefull: maybe there are some enemies and pitfalls!<br><br><font face="LevenimBold">Control the game with your...</font><br><br><font color="#49CBED" face="LevenimBold">Mouse:</font> Move your mouse as usual across the playing field. The field know will move space and the ball will roll!<br><br><font color="#49CBED" face="LevenimBold">Wii Controller</font> To play the game with your Wiimote you will have to connect it with a small programm called WiiFlash. You can download it here: <a href="http://wiiflash.bytearray.org" target="_blank"><u>wiiflash.bytearray.org</u></a><br><br><font color="#49CBED" face="LevenimBold">Keyboard:</font> Simply use the arrow keys from your keyboard to play the game.]]>
+						</mx:htmlText>
+					</mx:TextArea>
+					<mx:Button x="602" y="91" id="buttonXInstructionsGame" buttonMode="true" styleName="buttonX" click="instructionsVisibility = false; gamePause();" />
+					<mx:Button x="563" y="484" id="buttonCloseInstructionsGame" buttonMode="true" styleName="buttonClose" click="instructionsVisibility = false; gamePause();" />
+				</mx:Canvas>
+			</mx:AddChild>
+			
+			<mx:AddChild>			
+				<mx:Canvas visible="{controllerVisibility}" hideEffect="{alertOut}" showEffect="{alertIn}">
+					<mx:Image x="0" y="0" source="@Embed('resources/images/background_overlays.png')" />
+					<mx:Image x="139" y="145" source="@Embed('resources/images/window-controller.png')" />
+					<mx:Text x="168" y="168" selectable="false" styleName="textHeadline" text="Please choose your controller ..." />
+					<mx:TextArea x="168" y="208" width="125" height="40" editable="false" selectable="false" styleName="text14p" text="Classic Control by Mouse ..." />
+					<mx:TextArea x="339" y="208" width="135" height="40" editable="false" selectable="false" styleName="text14p" text="Best Experience with Wii Controller" />
+					<mx:TextArea x="508" y="208" width="135" height="40" editable="false" selectable="false" styleName="text14p" text="Use your arrow keys ..." />
+					<mx:Button x="163" y="262" id="buttonChangeControllerMouse" buttonMode="true" styleName="buttonControllerMouse" click="gamefield.changeController(1); controllerVisibility = false; gamePause();" />
+					<mx:Button x="334" y="246" id="buttonChangeControllerWii" buttonMode="true" styleName="buttonControllerWii" click="gamefield.changeController(2); controllerVisibility = false; gamePause();" />
+					<mx:Button x="492" y="262" id="buttonChangeControllerNotebook" buttonMode="true" styleName="buttonControllerNotebook" click="gamefield.changeController(3); controllerVisibility = false; gamePause();" />
+				</mx:Canvas>
+			</mx:AddChild>
+			
+			<mx:AddChild>
+				<mx:Canvas id="levelCompleted" visible="{levelcompletedVisibility}" hideEffect="{alertOut}" showEffect="{alertIn}">
+					<mx:Image x="0" y="0" source="@Embed('resources/images/background_overlays.png')" />
+					<mx:Image x="249" y="221" source="@Embed('resources/images/window-gratulations.png')" />
+					<mx:Text x="278" y="244" selectable="false" styleName="textHeadline" text="Congratulations!" />
+					<mx:TextArea x="278" y="284" width="250" height="50" verticalScrollPolicy="off" editable="false" selectable="false" styleName="text15p" text="You have managed this level... Are you ready for the next one?" />
+					<mx:Button x="437" y="344" id="buttonNextMission" buttonMode="true" styleName="buttonNextMission" click="levelCompletedClick();" />
+				</mx:Canvas>
+			</mx:AddChild>
+			
+			<mx:AddChild>
+				<mx:Canvas id="allLevelCompleteted" visible="{allcompletedVisibility}" hideEffect="{alertOut}" showEffect="{alertIn}">
+					<mx:Image x="0" y="0" source="@Embed('resources/images/background_overlays.png')" />
+					<mx:Image x="249" y="221" source="@Embed('resources/images/window-gratulations.png')" />
+					<mx:Text x="278" y="244" selectable="false" styleName="textHeadline" text="Yes, you did it!!!" />
+					<mx:TextArea x="278" y="284" width="250" height="50" verticalScrollPolicy="off" editable="false" selectable="false" styleName="text15p" text="You won this cruel war against the evil and saved the universe!" />
+					<mx:Button x="425" y="344" id="buttonBackToMenu" buttonMode="true" styleName="buttonBackToMenu" click="allLevelCompletedClick();" />
+				</mx:Canvas>
+			</mx:AddChild>
+			
+			<mx:AddChild>
+				<mx:Canvas id="allLevelCompletedHigh" visible= "{allcompletedhighVisibility}" hideEffect="{alertOut}" showEffect="{alertIn}" >
+					<mx:Image x="0" y="0" source="@Embed('resources/images/background_overlays.png')" />
+					<mx:Image x="233" y="192" source="@Embed('resources/images/window-submithighscores.png')" />
+					<mx:Text x="260" y="215" selectable="false" styleName="textHeadline" text="Yes, you did it!!!" />
+					<mx:TextArea x="260" y="255" width="287" height="100" verticalScrollPolicy="off" editable="false" selectable="false" styleName="text15p" text="You won this cruel war against the  evil and saved the universe. And what's the best: you are in the top 15!" />
+					<mx:TextInput x="263" y="332" id="highscoresNickname" width="279" height="23" maxChars="14" backgroundColor="#b5f0ff" borderStyle="solid" borderColor="#49cbed" fontFamily="LevenimBold" fontWeight="bold" fontSize="14" text="Enter your nickname here..." focusIn="if (highscoresNickname.text == 'Enter your nickname here...') { highscoresNickname.text = ''}" />
+					<mx:Button x="419" y="380" id="buttonSubmitHighscores" buttonMode="true" styleName="buttonSubmitHighscores" click="gamefield.SpaceballsGame.sendHighscore(highscoresNickname.text.toString()) ;" />
+				</mx:Canvas>
+			</mx:AddChild>
+			
+			<mx:AddChild>
+				<mx:Canvas id="levelFailed" visible="{levelfailedVisibility}" hideEffect="{alertOut}" showEffect="{alertIn}">
+					<mx:Image x="0" y="0" source="@Embed('resources/images/background_overlays.png')" />
+					<mx:Image x="264" y="221" source="@Embed('resources/images/window-failed.png')" />
+					<mx:Text x="293" y="244" selectable="false" styleName="textHeadline" text="Mission failed!" />
+					<mx:TextArea x="293" y="284" width="230" height="50" verticalScrollPolicy="off" editable="false" selectable="false" styleName="text15p" text="Travel some minutes back in time to try this level again..." />
+					<mx:Button x="442" y="344" id="buttonTryAgain" buttonMode="true" styleName="buttonTryAgain" click="levelFailedClick();" />
+				</mx:Canvas>
+			</mx:AddChild>
+			
+			<mx:AddChild>
+				<mx:Canvas visible="{ownlevelcompletedVisibility}" hideEffect="{alertOut}" showEffect="{alertIn}">
+					<mx:Image x="0" y="0" source="@Embed('resources/images/background_overlays.png')" />
+					<mx:Image x="249" y="221" source="@Embed('resources/images/window-gratulations.png')" />
+					<mx:Text x="278" y="244" selectable="false" styleName="textHeadline" text="Congratulations!" />
+					<mx:TextArea x="278" y="284" width="250" height="50" verticalScrollPolicy="off" editable="false" selectable="false" styleName="text15p" text="You have managed your level... Had fun? Just create a new one!" />
+					<mx:Button x="426" y="344" id="buttonBackToMenu2" buttonMode="true" styleName="buttonBackToMenu" click="currentState = 'menu'; ownlevelcompletedVisibility = false; privateLevel = false; this.levelXMLText = null;" />
+				</mx:Canvas>
+			</mx:AddChild>
+			
+			<mx:AddChild>
+				<mx:Canvas visible="{owntestlevelcompletedVisibility}" hideEffect="{alertOut}" showEffect="{alertIn}">
+					<mx:Image x="0" y="0" source="@Embed('resources/images/background_overlays.png')" />
+					<mx:Image x="249" y="221" source="@Embed('resources/images/window-gratulations.png')" />
+					<mx:Text x="278" y="244" selectable="false" styleName="textHeadline" text="Yes, you did it!" />
+					<mx:TextArea x="278" y="284" width="250" height="50" verticalScrollPolicy="off" editable="false" selectable="false" styleName="text15p" text="Your can edit your level, save it or just create a new one..." />
+					<mx:Button x="456" y="344" id="buttonLevelbuilderEdit2" buttonMode="true" styleName="buttonLevelbuilderEdit" click="currentState = 'levelbuilder'; this._currentLevel = 1; this._highscore = 0; this.privateLevel= false; _levelBuilder = false; owntestlevelcompletedVisibility = false; fillLevelbuilder(); refillLevelbuilder(); this.levelXMLText = null" />
+				</mx:Canvas>
+			</mx:AddChild>
+			
+		</mx:State>
+		
+		<mx:State name="levelbuilder">
+		
+			<mx:AddChild>
+				<mx:Canvas id="levelbuilder">
+					<mx:Image x="0" y="0" source="@Embed('resources/images/background_levelbuilder.jpg')" />
+					<mx:Button x="264" y="35" id="buttonLevelbuilderPlay" buttonMode="true" styleName="buttonLevelbuilderPlay" click="privateLevel = true; _levelBuilder = true; playLevelbuilder(); fieldActualSelected = fieldEmpty; selectButton('buttonLevelbuilderEmpty'); removeLevelbuilder();" />
+					<mx:Button x="355" y="35" id="buttonLevelbuilderSave" buttonMode="true" styleName="buttonLevelbuilderSave" click="savelevelVisibility = true; fieldActualSelected = fieldEmpty; selectButton('buttonLevelbuilderEmpty'); saveLevelbuilder(1); this.removeLevelbuilder();" />
+					<mx:Button x="451" y="35" id="buttonLevelbuilderCancel" buttonMode="true" styleName="buttonGameCancel" click="currentState = 'menu'; _levelBuilder = false; this.privateLevel = false; this._currentLevel = 1; this._highscore = 0; fieldActualSelected = fieldEmpty; selectButton('buttonLevelbuilderEmpty'); removeLevelbuilder()" />
+					
+					<mx:Button x="570" y="35" id="buttonLevelbuilderNormal" buttonMode="true" styleName="buttonLevelbuilderNormal" click="fieldActualSelected = fieldNormal; selectButton('buttonLevelbuilderNormal')" selected="{buttonLevelbuilderNormalSelected}" />
+					<mx:Button x="679" y="35" id="buttonLevelbuilderEmpty" buttonMode="true" styleName="buttonLevelbuilderEmpty" click="fieldActualSelected = fieldEmpty; selectButton('buttonLevelbuilderEmpty')" selected="{buttonLevelbuilderEmptySelected}" />
+					<mx:Button x="570" y="128" id="buttonLevelbuilderWall" buttonMode="true" styleName="buttonLevelbuilderWall" click="fieldActualSelected = fieldWall; selectButton('buttonLevelbuilderWall')" selected="{buttonLevelbuilderWallSelected}" />
+					<mx:Button x="679" y="128" id="buttonLevelbuilderEnd" buttonMode="true" styleName="buttonLevelbuilderEnd" click="fieldActualSelected = fieldEnd; selectButton('buttonLevelbuilderEnd')" selected="{buttonLevelbuilderEndSelected}" />
+					<mx:Button x="570" y="221" id="buttonLevelbuilderSpaceball" buttonMode="true" styleName="buttonLevelbuilderSpaceball" click="fieldActualSelected = fieldSpaceball; selectButton('buttonLevelbuilderSpaceball')" selected="{buttonLevelbuilderSpaceballSelected}" />
+					<mx:Button x="679" y="221" id="buttonLevelbuilderEnemy" buttonMode="true" styleName="buttonLevelbuilderEnemy" click="fieldActualSelected = fieldEnemy; selectButton('buttonLevelbuilderEnemy')" selected="{buttonLevelbuilderEnemySelected}" />
+					<mx:Button x="570" y="316" id="buttonLevelbuilderGravitationIn" buttonMode="true" styleName="buttonLevelbuilderGravitationIn" click="fieldActualSelected = fieldGravitationIn; selectButton('buttonLevelbuilderGravitationIn')" selected="{buttonLevelbuilderGravitationInSelected}" />
+					<mx:Button x="679" y="316" id="buttonLevelbuilderGravitationOut" buttonMode="true" styleName="buttonLevelbuilderGravitationOut" click="fieldActualSelected = fieldGravitationOut; selectButton('buttonLevelbuilderGravitationOut')" selected="{buttonLevelbuilderGravitationOutSelected}" />
+					<mx:Button x="570" y="409" id="buttonLevelbuilderWormholeIn" buttonMode="true" styleName="buttonLevelbuilderWormholeIn" click="fieldActualSelected = fieldWormholeIn; selectButton('buttonLevelbuilderWormholeIn')" selected="{buttonLevelbuilderWormholeInSelected}" />
+					<mx:Button x="679" y="409" id="buttonLevelbuilderWormholeOut" buttonMode="true" styleName="buttonLevelbuilderWormholeOut" click="fieldActualSelected = fieldWormholeOut; selectButton('buttonLevelbuilderWormholeOut')" selected="{buttonLevelbuilderWormholeOutSelected}" />
+					<mx:Button x="570" y="502" id="buttonLevelbuilderHole" buttonMode="true" styleName="buttonLevelbuilderHole" click="fieldActualSelected = fieldHole; selectButton('buttonLevelbuilderHole')" selected="{buttonLevelbuilderHoleSelected}" />
+					<mx:Button x="679" y="502" id="buttonLevelbuilderBlackhole" buttonMode="true" styleName="buttonLevelbuilderBlackhole" click="fieldActualSelected = fieldBlackhole; selectButton('buttonLevelbuilderBlackhole')" selected="{buttonLevelbuilderBlackholeSelected}" />
+
+					<mx:Image x="27" y="82" width="493" height="2" source="@Embed('resources/images/levelbuilder-rahmen-up.png')" />
+					<mx:Image x="27" y="573" width="493" height="2" source="@Embed('resources/images/levelbuilder-rahmen-down.png')" />
+					<mx:Image x="27" y="84" width="2" height="493" source="@Embed('resources/images/levelbuilder-rahmen-left.png')" />
+					<mx:Image x="518" y="84" width="2" height="493" source="@Embed('resources/images/levelbuilder-rahmen-right.png')" />
+				</mx:Canvas>
+			</mx:AddChild>
+			
+			<!--<mx:AddChild>
+				<mx:Canvas visible="{savelevelVisibility}" hideEffect="{alertOut}" showEffect="{alertIn}">
+					<mx:Image x="0" y="0" source="@Embed('resources/images/background_overlays.png')" />
+					<mx:Image x="158" y="80" source="@Embed('resources/images/window-standardsize.png')" />
+					<mx:Text x="187" y="103" selectable="false" styleName="textHeadline" text="Save your own level ..." />
+					<mx:TextArea x="187" y="143" width="430" height="340" verticalScrollPolicy="off" editable="false" selectable="false" styleName="text15p" >
+						<mx:htmlText>
+						<![CDATA[To save your level please copy the code below and paste him into an empty text-file. Then go back to the Spaceballs menu where's a topic called "Load Levels". Paste the code here again - and play your level!]]>
+						</mx:htmlText>
+					</mx:TextArea>
+					<mx:TextArea x="187" y="240" id="saveLevelXMLCode" width="425" height="220" verticalScrollPolicy="off" horizontalScrollPolicy="off" backgroundColor="#b5f0ff" borderStyle="solid" borderColor="#49cbed" fontFamily="LevenimRegular" fontWeight="normal" fontSize="11" editable="false" selectable="true" focusIn="saveLevelXMLCode.setSelection(0, saveLevelXMLCode.text.length)" text = "{levelXMLText}" />
+					<mx:Button x="515" y="484" id="buttonBackToMenu3" buttonMode="true" styleName="buttonBackToMenu" click="currentState = 'menu'; savelevelVisibility = false;" />
+				</mx:Canvas>
+			</mx:AddChild>-->
+			
+			<mx:AddChild>
+				<mx:Canvas visible= "{savelevelVisibility}" hideEffect="{alertOut}" showEffect="{alertIn}" >
+					<mx:Image x="0" y="0" source="@Embed('resources/images/background_overlays.png')" />
+					<mx:Image x="233" y="192" source="@Embed('resources/images/window-submithighscores.png')" />
+					<mx:Text x="260" y="215" selectable="false" styleName="textHeadline" text="Save your own level ..." />
+					<mx:TextArea x="260" y="255" width="287" height="120" verticalScrollPolicy="off" editable="false" selectable="false" styleName="text15p" text="To save your level click the button below and download the level... Then go back to the Spaceballs menu where's a topic called Load Levels. Simply upload the file again and play!" />
+					<mx:Button x="400" y="379" id="buttonLevelbuilderDownload" buttonMode="true" styleName="buttonLevelbuilderDownload" click="this.saveFile(levelXMLText); savelevelVisibility = false;" />
+				</mx:Canvas>
+			</mx:AddChild>
+			
+		</mx:State>
+
+	</mx:states>
+	
+</mx:Application>

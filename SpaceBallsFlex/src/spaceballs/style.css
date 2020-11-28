@@ -1,0 +1,524 @@
+/* CSS file */
+
+/* TEXTS */
+@font-face {
+    src: url('../resources/fonts/lvnm.ttf');
+    fontFamily: LevenimRegular;
+    fontAntiAliasType: advanced;
+    fontWeight: normal;
+}
+@font-face {
+    src: url('../resources/fonts/lvnmbd.ttf');
+    fontFamily: LevenimBold;
+    fontAntiAliasType: advanced;
+    fontWeight: bold;
+}
+.textHeadline {
+	fontFamily: 'LevenimBold';
+	color: #49CBED;
+	fontSize: 22;
+	fontWeight: bold;
+	letterSpacing: 0.3;
+	backgroundColor: none;
+	borderStyle: none;
+}
+.text14p {
+	fontFamily: 'LevenimRegular';
+	color: #FFFFFF;
+	fontSize: 14;
+	fontWeight: normal;
+	letterSpacing: 0.1;
+	leading: -1;
+	backgroundColor: none;
+	borderStyle: none;
+}
+.text15p {
+	fontFamily: 'LevenimRegular';
+	color: #FFFFFF;
+	fontSize: 15;
+	fontWeight: normal;
+	letterSpacing: 0.1;
+	leading: 1;
+	backgroundColor: none;
+	borderStyle: none;
+}
+.textHighscores {
+	fontFamily: 'LevenimRegular';
+	color: #FFFFFF;
+	fontSize: 15;
+	fontWeight: normal;
+	letterSpacing: 0.1;
+	leading: 2;
+	backgroundColor: none;
+	borderStyle: none;
+	textAlign: right;
+}
+.textHighscoresNames {
+	fontFamily: 'LevenimRegular';
+	color: #49CBED;
+	fontSize: 15;
+	fontWeight: normal;
+	letterSpacing: 0.1;
+	leading: 2;
+	backgroundColor: none;
+	borderStyle: none;
+	fontThickness: 1000;
+}
+.textGameScores {
+	fontFamily: 'LevenimBold';
+	color: #FFFFFF;
+	fontSize: 14;
+	fontWeight: bold;
+	letterSpacing: 0.3;
+	backgroundColor: none;
+	borderStyle: none;
+}
+
+/* BUTTONS */
+.buttonSound
+{
+    up-skin: Embed("resources/images/button-soundon-up.png");
+    down-skin: Embed("resources/images/button-soundon-down.png");
+    over-skin: Embed("resources/images/button-soundon-down.png");
+    disabled-skin: Embed("resources/images/button-soundon-up.png");
+    selected-up-skin: Embed("resources/images/button-soundoff-up.png");
+    selected-over-skin: Embed("resources/images/button-soundoff-down.png");
+    selected-down-skin: Embed("resources/images/button-soundoff-down.png");
+    selected-disabled-skin: Embed("resources/images/button-soundoff-up.png");
+    width: 17px;
+    height: 17px;
+}
+.buttonSkip
+{
+    up-skin: Embed("resources/images/button-skip-up.png");
+    down-skin: Embed("resources/images/button-skip-down.png");
+    over-skin: Embed("resources/images/button-skip-down.png");
+    disabled-skin: Embed("resources/images/button-skip-up.png");
+    width: 41px;
+    height: 9px;
+}
+.buttonMainStart
+{
+    up-skin: Embed("resources/images/button-startmission-up.png");
+    down-skin: Embed("resources/images/button-startmission-down.png");
+    over-skin: Embed("resources/images/button-startmission-down.png");
+    disabled-skin: Embed("resources/images/button-startmission-up.png");
+    width: 206px;
+    height: 33px;
+}
+.buttonMainInstructions
+{
+    up-skin: Embed("resources/images/button-instructions-up.png");
+    down-skin: Embed("resources/images/button-instructions-down.png");
+    over-skin: Embed("resources/images/button-instructions-down.png");
+    disabled-skin: Embed("resources/images/button-instructions-up.png");
+    width: 105px;
+    height: 21px;
+}
+.buttonMainHighscores
+{
+    up-skin: Embed("resources/images/button-highscores-up.png");
+    down-skin: Embed("resources/images/button-highscores-down.png");
+    over-skin: Embed("resources/images/button-highscores-down.png");
+    disabled-skin: Embed("resources/images/button-highscores-up.png");
+    width: 102px;
+    height: 24px;
+}
+.buttonMainBuidLevels
+{
+    up-skin: Embed("resources/images/button-buildlevels-up.png");
+    down-skin: Embed("resources/images/button-buildlevels-down.png");
+    over-skin: Embed("resources/images/button-buildlevels-down.png");
+    disabled-skin: Embed("resources/images/button-buildlevels-up.png");
+    width: 205px;
+    height: 21px;
+}
+.buttonMainLoadLevels
+{
+    up-skin: Embed("resources/images/button-loadlevels-up.png");
+    down-skin: Embed("resources/images/button-loadlevels-down.png");
+    over-skin: Embed("resources/images/button-loadlevels-down.png");
+    disabled-skin: Embed("resources/images/button-loadlevels-up.png");
+    width: 112px;
+    height: 21px;
+}
+.buttonMainAbout
+{
+    up-skin: Embed("resources/images/button-about-up.png");
+    down-skin: Embed("resources/images/button-about-down.png");
+    over-skin: Embed("resources/images/button-about-down.png");
+    disabled-skin: Embed("resources/images/button-about-up.png");
+    width: 96px;
+    height: 22px;
+}
+.buttonControllerMouse
+{
+    up-skin: Embed("resources/images/button-controller-mouse-up.png");
+    down-skin: Embed("resources/images/button-controller-mouse-down.png");
+    over-skin: Embed("resources/images/button-controller-mouse-down.png");
+    disabled-skin: Embed("resources/images/button-controller-mouse-up.png");
+    width: 138px;
+    height: 162px;
+}
+.buttonControllerWii
+{
+    up-skin: Embed("resources/images/button-controller-wii-up.png");
+    down-skin: Embed("resources/images/button-controller-wii-down.png");
+    over-skin: Embed("resources/images/button-controller-wii-down.png");
+    disabled-skin: Embed("resources/images/button-controller-wii-up.png");
+    width: 136px;
+    height: 178px;
+}
+.buttonControllerNotebook
+{
+    up-skin: Embed("resources/images/button-controller-notebook-up.png");
+    down-skin: Embed("resources/images/button-controller-notebook-down.png");
+    over-skin: Embed("resources/images/button-controller-notebook-down.png");
+    disabled-skin: Embed("resources/images/button-controller-notebook-up.png");
+    width: 157px;
+    height: 162px;
+}
+.buttonGameController
+{
+    up-skin: Embed("resources/images/button-game-controller-up.png");
+    down-skin: Embed("resources/images/button-game-controller-down.png");
+    over-skin: Embed("resources/images/button-game-controller-down.png");
+    disabled-skin: Embed("resources/images/button-game-controller-up.png");
+    width: 91px;
+    height: 24px;
+}
+.buttonGameInstructions
+{
+    up-skin: Embed("resources/images/button-game-instructions-up.png");
+    down-skin: Embed("resources/images/button-game-instructions-down.png");
+    over-skin: Embed("resources/images/button-game-instructions-down.png");
+    disabled-skin: Embed("resources/images/button-game-instructions-up.png");
+    width: 29px;
+    height: 24px;
+}
+.buttonGamePause
+{
+    up-skin: Embed("resources/images/button-game-pause-up.png");
+    down-skin: Embed("resources/images/button-game-pause-down.png");
+    over-skin: Embed("resources/images/button-game-pause-down.png");
+    disabled-skin: Embed("resources/images/button-game-pause-up.png");
+    selected-up-skin: Embed("resources/images/button-game-play-up.png");
+    selected-over-skin: Embed("resources/images/button-game-play-down.png");
+    selected-down-skin: Embed("resources/images/button-game-play-down.png");
+    selected-disabled-skin: Embed("resources/images/button-game-play-up.png");
+    width: 29px;
+    height: 24px;
+}
+.buttonGameSound
+{
+    up-skin: Embed("resources/images/button-game-soundon-up.png");
+    down-skin: Embed("resources/images/button-game-soundon-down.png");
+    over-skin: Embed("resources/images/button-game-soundon-down.png");
+    disabled-skin: Embed("resources/images/button-game-soundon-up.png");
+    selected-up-skin: Embed("resources/images/button-game-soundoff-up.png");
+    selected-over-skin: Embed("resources/images/button-game-soundoff-down.png");
+    selected-down-skin: Embed("resources/images/button-game-soundoff-down.png");
+    selected-disabled-skin: Embed("resources/images/button-game-soundoff-up.png");
+    width: 29px;
+    height: 24px;
+}
+.buttonGameCancel
+{
+    up-skin: Embed("resources/images/button-game-cancel-up.png");
+    down-skin: Embed("resources/images/button-game-cancel-down.png");
+    over-skin: Embed("resources/images/button-game-cancel-down.png");
+    disabled-skin: Embed("resources/images/button-game-cancel-up.png");
+    width: 68px;
+    height: 24px;
+}
+.buttonBackToMenu
+{
+    up-skin: Embed("resources/images/button-backtomenu-up.png");
+    down-skin: Embed("resources/images/button-backtomenu-down.png");
+    over-skin: Embed("resources/images/button-backtomenu-down.png");
+    disabled-skin: Embed("resources/images/button-backtomenu-up.png");
+    width: 115px;
+    height: 24px;
+}
+.buttonX
+{
+    up-skin: Embed("resources/images/button-x-up.png");
+    down-skin: Embed("resources/images/button-x-down.png");
+    over-skin: Embed("resources/images/button-x-down.png");
+    disabled-skin: Embed("resources/images/button-x-up.png");
+    width: 29px;
+    height: 24px;
+}
+.buttonClose
+{
+    up-skin: Embed("resources/images/button-close-up.png");
+    down-skin: Embed("resources/images/button-close-down.png");
+    over-skin: Embed("resources/images/button-close-down.png");
+    disabled-skin: Embed("resources/images/button-close-up.png");
+    width: 68px;
+    height: 24px;
+}
+.buttonFirstMission
+{
+    up-skin: Embed("resources/images/button-firstmission-up.png");
+    down-skin: Embed("resources/images/button-firstmission-down.png");
+    over-skin: Embed("resources/images/button-firstmission-down.png");
+    disabled-skin: Embed("resources/images/button-firstmission-up.png");
+    width: 104px;
+    height: 24px;
+}
+.buttonNextMission
+{
+    up-skin: Embed("resources/images/button-nextmission-up.png");
+    down-skin: Embed("resources/images/button-nextmission-down.png");
+    over-skin: Embed("resources/images/button-nextmission-down.png");
+    disabled-skin: Embed("resources/images/button-nextmission-up.png");
+    width: 104px;
+    height: 24px;
+}
+.buttonTryAgain
+{
+    up-skin: Embed("resources/images/button-tryagain-up.png");
+    down-skin: Embed("resources/images/button-tryagain-down.png");
+    over-skin: Embed("resources/images/button-tryagain-down.png");
+    disabled-skin: Embed("resources/images/button-tryagain-up.png");
+    width: 84px;
+    height: 24px;
+}
+.buttonSubmitHighscores
+{
+    up-skin: Embed("resources/images/button-submithighscores-up.png");
+    down-skin: Embed("resources/images/button-submithighscores-down.png");
+    over-skin: Embed("resources/images/button-submithighscores-down.png");
+    disabled-skin: Embed("resources/images/button-submithighscores-up.png");
+    width: 138px;
+    height: 24px;
+}
+.buttonLevelbuilderSave
+{
+    up-skin: Embed("resources/images/button-save-up.png");
+    down-skin: Embed("resources/images/button-save-down.png");
+    over-skin: Embed("resources/images/button-save-down.png");
+    disabled-skin: Embed("resources/images/button-save-up.png");
+    width: 88px;
+    height: 24px;
+}
+.buttonLevelbuilderPlay
+{
+    up-skin: Embed("resources/images/button-play-up.png");
+    down-skin: Embed("resources/images/button-play-down.png");
+    over-skin: Embed("resources/images/button-play-down.png");
+    disabled-skin: Embed("resources/images/button-play-up.png");
+    width: 83px;
+    height: 24px;
+}
+.buttonLevelbuilderEdit
+{
+    up-skin: Embed("resources/images/button-editlevel-up.png");
+    down-skin: Embed("resources/images/button-editlevel-down.png");
+    over-skin: Embed("resources/images/button-editlevel-down.png");
+    disabled-skin: Embed("resources/images/button-editlevel-up.png");
+    width: 85px;
+    height: 24px;
+}
+.buttonLevelbuilderUpload
+{
+    up-skin: Embed("resources/images/button-levelbuilder-upload-up.png");
+    down-skin: Embed("resources/images/button-levelbuilder-upload-down.png");
+    over-skin: Embed("resources/images/button-levelbuilder-upload-down.png");
+    disabled-skin: Embed("resources/images/button-levelbuilder-upload-up.png");
+    width: 137px;
+    height: 24px;
+}
+.buttonLevelbuilderDownload
+{
+    up-skin: Embed("resources/images/button-levelbuilder-download-up.png");
+    down-skin: Embed("resources/images/button-levelbuilder-download-down.png");
+    over-skin: Embed("resources/images/button-levelbuilder-download-down.png");
+    disabled-skin: Embed("resources/images/button-levelbuilder-download-up.png");
+    width: 157px;
+    height: 24px;
+}
+.buttonLevelbuilderNormal
+{
+    up-skin: Embed("resources/images/button-levelbuilder-normal-up.png");
+    down-skin: Embed("resources/images/button-levelbuilder-normal-down.png");
+    over-skin: Embed("resources/images/button-levelbuilder-normal-down.png");
+    disabled-skin: Embed("resources/images/button-levelbuilder-normal-up.png");
+    selected-up-skin: Embed("resources/images/button-levelbuilder-normal-down.png");
+    selected-over-skin: Embed("resources/images/button-levelbuilder-normal-down.png");
+    selected-down-skin: Embed("resources/images/button-levelbuilder-normal-down.png");
+    selected-disabled-skin: Embed("resources/images/button-levelbuilder-normal-down.png");
+    width: 77px;
+    height: 80px;
+}
+.buttonLevelbuilderEmpty
+{
+    up-skin: Embed("resources/images/button-levelbuilder-empty-up.png");
+    down-skin: Embed("resources/images/button-levelbuilder-empty-down.png");
+    over-skin: Embed("resources/images/button-levelbuilder-empty-down.png");
+    disabled-skin: Embed("resources/images/button-levelbuilder-empty-up.png");
+    selected-up-skin: Embed("resources/images/button-levelbuilder-empty-down.png");
+    selected-over-skin: Embed("resources/images/button-levelbuilder-empty-down.png");
+    selected-down-skin: Embed("resources/images/button-levelbuilder-empty-down.png");
+    selected-disabled-skin: Embed("resources/images/button-levelbuilder-empty-down.png");
+    width: 77px;
+    height: 80px;
+}
+.buttonLevelbuilderWall
+{
+    up-skin: Embed("resources/images/button-levelbuilder-wall-up.png");
+    down-skin: Embed("resources/images/button-levelbuilder-wall-down.png");
+    over-skin: Embed("resources/images/button-levelbuilder-wall-down.png");
+    disabled-skin: Embed("resources/images/button-levelbuilder-wall-up.png");
+    selected-up-skin: Embed("resources/images/button-levelbuilder-wall-down.png");
+    selected-over-skin: Embed("resources/images/button-levelbuilder-wall-down.png");
+    selected-down-skin: Embed("resources/images/button-levelbuilder-wall-down.png");
+    selected-disabled-skin: Embed("resources/images/button-levelbuilder-wall-down.png");
+    width: 77px;
+    height: 80px;
+}
+.buttonLevelbuilderEnd
+{
+    up-skin: Embed("resources/images/button-levelbuilder-end-up.png");
+    down-skin: Embed("resources/images/button-levelbuilder-end-down.png");
+    over-skin: Embed("resources/images/button-levelbuilder-end-down.png");
+    disabled-skin: Embed("resources/images/button-levelbuilder-end-up.png");
+    selected-up-skin: Embed("resources/images/button-levelbuilder-end-down.png");
+    selected-over-skin: Embed("resources/images/button-levelbuilder-end-down.png");
+    selected-down-skin: Embed("resources/images/button-levelbuilder-end-down.png");
+    selected-disabled-skin: Embed("resources/images/button-levelbuilder-end-down.png");
+    width: 77px;
+    height: 80px;
+}
+.buttonLevelbuilderSpaceball
+{
+    up-skin: Embed("resources/images/button-levelbuilder-spaceball-up.png");
+    down-skin: Embed("resources/images/button-levelbuilder-spaceball-down.png");
+    over-skin: Embed("resources/images/button-levelbuilder-spaceball-down.png");
+    disabled-skin: Embed("resources/images/button-levelbuilder-spaceball-up.png");
+    selected-up-skin: Embed("resources/images/button-levelbuilder-spaceball-down.png");
+    selected-over-skin: Embed("resources/images/button-levelbuilder-spaceball-down.png");
+    selected-down-skin: Embed("resources/images/button-levelbuilder-spaceball-down.png");
+    selected-disabled-skin: Embed("resources/images/button-levelbuilder-spaceball-down.png");
+    width: 77px;
+    height: 80px;
+}
+.buttonLevelbuilderEnemy
+{
+    up-skin: Embed("resources/images/button-levelbuilder-enemy-up.png");
+    down-skin: Embed("resources/images/button-levelbuilder-enemy-down.png");
+    over-skin: Embed("resources/images/button-levelbuilder-enemy-down.png");
+    disabled-skin: Embed("resources/images/button-levelbuilder-enemy-up.png");
+    selected-up-skin: Embed("resources/images/button-levelbuilder-enemy-down.png");
+    selected-over-skin: Embed("resources/images/button-levelbuilder-enemy-down.png");
+    selected-down-skin: Embed("resources/images/button-levelbuilder-enemy-down.png");
+    selected-disabled-skin: Embed("resources/images/button-levelbuilder-enemy-down.png");
+    width: 77px;
+    height: 80px;
+}
+.buttonLevelbuilderGravitationIn
+{
+    up-skin: Embed("resources/images/button-levelbuilder-gravitationin-up.png");
+    down-skin: Embed("resources/images/button-levelbuilder-gravitationin-down.png");
+    over-skin: Embed("resources/images/button-levelbuilder-gravitationin-down.png");
+    disabled-skin: Embed("resources/images/button-levelbuilder-gravitationin-up.png");
+    selected-up-skin: Embed("resources/images/button-levelbuilder-gravitationin-down.png");
+    selected-over-skin: Embed("resources/images/button-levelbuilder-gravitationin-down.png");
+    selected-down-skin: Embed("resources/images/button-levelbuilder-gravitationin-down.png");
+    selected-disabled-skin: Embed("resources/images/button-levelbuilder-gravitationin-down.png");
+    width: 77px;
+    height: 80px;
+}
+.buttonLevelbuilderGravitationOut
+{
+    up-skin: Embed("resources/images/button-levelbuilder-gravitationout-up.png");
+    down-skin: Embed("resources/images/button-levelbuilder-gravitationout-down.png");
+    over-skin: Embed("resources/images/button-levelbuilder-gravitationout-down.png");
+    disabled-skin: Embed("resources/images/button-levelbuilder-gravitationout-up.png");
+    selected-up-skin: Embed("resources/images/button-levelbuilder-gravitationout-down.png");
+    selected-over-skin: Embed("resources/images/button-levelbuilder-gravitationout-down.png");
+    selected-down-skin: Embed("resources/images/button-levelbuilder-gravitationout-down.png");
+    selected-disabled-skin: Embed("resources/images/button-levelbuilder-gravitationout-down.png");
+    width: 77px;
+    height: 80px;
+}
+.buttonLevelbuilderWormholeIn
+{
+    up-skin: Embed("resources/images/button-levelbuilder-wormholein-up.png");
+    down-skin: Embed("resources/images/button-levelbuilder-wormholein-down.png");
+    over-skin: Embed("resources/images/button-levelbuilder-wormholein-down.png");
+    disabled-skin: Embed("resources/images/button-levelbuilder-wormholein-up.png");
+    selected-up-skin: Embed("resources/images/button-levelbuilder-wormholein-down.png");
+    selected-over-skin: Embed("resources/images/button-levelbuilder-wormholein-down.png");
+    selected-down-skin: Embed("resources/images/button-levelbuilder-wormholein-down.png");
+    selected-disabled-skin: Embed("resources/images/button-levelbuilder-wormholein-down.png");
+    width: 77px;
+    height: 80px;
+}
+.buttonLevelbuilderWormholeOut
+{
+    up-skin: Embed("resources/images/button-levelbuilder-wormholeout-up.png");
+    down-skin: Embed("resources/images/button-levelbuilder-wormholeout-down.png");
+    over-skin: Embed("resources/images/button-levelbuilder-wormholeout-down.png");
+    disabled-skin: Embed("resources/images/button-levelbuilder-wormholeout-up.png");
+    selected-up-skin: Embed("resources/images/button-levelbuilder-wormholeout-down.png");
+    selected-over-skin: Embed("resources/images/button-levelbuilder-wormholeout-down.png");
+    selected-down-skin: Embed("resources/images/button-levelbuilder-wormholeout-down.png");
+    selected-disabled-skin: Embed("resources/images/button-levelbuilder-wormholeout-down.png");
+    width: 77px;
+    height: 80px;
+}
+.buttonLevelbuilderHole
+{
+    up-skin: Embed("resources/images/button-levelbuilder-hole-up.png");
+    down-skin: Embed("resources/images/button-levelbuilder-hole-down.png");
+    over-skin: Embed("resources/images/button-levelbuilder-hole-down.png");
+    disabled-skin: Embed("resources/images/button-levelbuilder-hole-up.png");
+    selected-up-skin: Embed("resources/images/button-levelbuilder-hole-down.png");
+    selected-over-skin: Embed("resources/images/button-levelbuilder-hole-down.png");
+    selected-down-skin: Embed("resources/images/button-levelbuilder-hole-down.png");
+    selected-disabled-skin: Embed("resources/images/button-levelbuilder-hole-down.png");
+    width: 77px;
+    height: 80px;
+}
+.buttonLevelbuilderBlackhole
+{
+    up-skin: Embed("resources/images/button-levelbuilder-blackhole-up.png");
+    down-skin: Embed("resources/images/button-levelbuilder-blackhole-down.png");
+    over-skin: Embed("resources/images/button-levelbuilder-blackhole-down.png");
+    disabled-skin: Embed("resources/images/button-levelbuilder-blackhole-up.png");
+    selected-up-skin: Embed("resources/images/button-levelbuilder-blackhole-down.png");
+    selected-over-skin: Embed("resources/images/button-levelbuilder-blackhole-down.png");
+    selected-down-skin: Embed("resources/images/button-levelbuilder-blackhole-down.png");
+    selected-disabled-skin: Embed("resources/images/button-levelbuilder-blackhole-down.png");
+    width: 77px;
+    height: 80px;
+}
+.buttonLevelSizeSmall
+{
+    up-skin: Embed("resources/images/button-levelsizesmall-up.png");
+    down-skin: Embed("resources/images/button-levelsizesmall-down.png");
+    over-skin: Embed("resources/images/button-levelsizesmall-down.png");
+    disabled-skin: Embed("resources/images/button-levelsizesmall-up.png");
+    width: 124px;
+    height: 162px;
+}
+.buttonLevelSizeNormal
+{
+    up-skin: Embed("resources/images/button-levelsizenormal-up.png");
+    down-skin: Embed("resources/images/button-levelsizenormal-down.png");
+    over-skin: Embed("resources/images/button-levelsizenormal-down.png");
+    disabled-skin: Embed("resources/images/button-levelsizenormal-up.png");
+    width: 124px;
+    height: 162px;
+}
+.buttonLevelSizeBig
+{
+    up-skin: Embed("resources/images/button-levelsizebig-up.png");
+    down-skin: Embed("resources/images/button-levelsizebig-down.png");
+    over-skin: Embed("resources/images/button-levelsizebig-down.png");
+    disabled-skin: Embed("resources/images/button-levelsizebig-up.png");
+    width: 124px;
+    height: 162px;
+}
